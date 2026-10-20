@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta charset="UTF-8">
 <title>厄尔尼诺与拉尼娜现象演示</title>
 <style>
@@ -15,7 +15,16 @@
   .stage {
     background: #fdfefe; border-radius: 14px; overflow: hidden;
     box-shadow: 0 4px 18px rgba(30,60,90,.10); border: 1px solid #e3e9ee;
+    position: relative;
   }
+  /* 画布顶部三个年份下拉列表 */
+  #yearSel { position: absolute; top: 14px; left: 14px; display: flex; gap: 10px; z-index: 6; }
+  #yearSel select {
+    padding: 7px 8px; border: 1.5px solid #cfd9e2; border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: #34495e; background: #fff;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(30,60,90,.08); outline: none;
+  }
+  #yearSel select:focus { border-color: #7fa8cc; }
   canvas { display: block; width: 100%; height: auto; }
   #chips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .chip {
@@ -60,6 +69,18 @@
   }
   .btns button:hover { background: #f0f5f9; border-color: #9db8cc; }
   .btns button.primary { background: #34699a; border-color: #34699a; color: #fff; }
+  .btns button.tg-on { background: #eaf3fb; border-color: #7fa8cc; color: #22557f; }
+  .btns button.tg-off { opacity: 0.45; text-decoration: line-through; }
+  /* 主图右侧空白处的纵向切换按钮 */
+  #toggles { position: absolute; right: 320px; top: 335px; width: 118px; display: flex; flex-direction: column; gap: 12px; z-index: 5; }
+  #toggles button {
+    padding: 10px 0; border: 1.5px solid #cfd9e2; background: #fff;
+    border-radius: 9px; font-size: 15px; cursor: pointer; color: #34495e; font-weight: 600;
+    box-shadow: 0 3px 12px rgba(30,60,90,.10); transition: all .2s;
+  }
+  #toggles button:hover { background: #f0f5f9; border-color: #9db8cc; }
+  #toggles button.tg-on { background: #eaf3fb; border-color: #7fa8cc; color: #22557f; }
+  #toggles button.tg-off { opacity: 0.45; text-decoration: line-through; }
   .btns button.primary:hover { background: #2c5a85; }
   .speedrow { display: flex; align-items: center; gap: 10px; font-size: 14.5px; color: #5d6d7e; margin-top: 10px; }
   .speedrow input { flex: 1; accent-color: #34699a; }
@@ -80,14 +101,18 @@
   <div id="left">
     <div class="stage" id="stagebox">
       <canvas id="cv" width="1080" height="750"></canvas>
+      <div id="yearSel">
+        <select id="selYear"><option value="2013">2013年</option><option value="2015">2015年</option><option value="2020" selected="selected">2020年</option></select>
+        <select id="selMonth"><option value="12" selected="selected">12月</option></select>
+      </div>
     </div>
-    <div id="chips"></div>
+    <div id="chips"><span class="chip cold on">信风增强</span><span class="arrow">→</span><span class="chip cold on">暖池西推</span><span class="arrow">→</span><span class="chip on">对流集中于西太平洋</span><span class="arrow">→</span><span class="chip on">上升流增强</span><span class="arrow">→</span><span class="chip on">澳洲多雨 · 南美干旱</span></div>
   </div>
   <div id="right">
     <div class="panel">
       <h1>厄尔尼诺 — 南方涛动 (ENSO)</h1>
       <div class="sub">赤道太平洋海气相互作用 · 三相位动图演示</div>
-      <div id="cards"></div>
+      <div id="cards"><div class="stepcard neutral" data-i="0"><div class="t"><span>中性状态</span></div><div class="d">信风强度正常，暖池停留在西太平洋，赤道温跃层西深东浅，南美沿岸上升流正常，澳大利亚降水正常。</div></div><div class="stepcard elnino" data-i="1"><div class="t"><span>厄尔尼诺</span></div><div class="d">信风显著减弱，暖池向东扩展、对流中心随之东移，秘鲁沿岸上升流受抑制，温跃层东部加深趋平；西太平洋偏冷，澳大利亚少雨、南美多雨。</div></div><div class="stepcard lanina active" data-i="2"><div class="t"><span>拉尼娜</span></div><div class="d">信风异常增强，暖池被推向极西，东太平洋冷水舌向西扩展，上升流增强，温跃层更陡；澳大利亚多雨、南美干旱。</div></div></div>
     </div>
     <div class="panel">
       <div class="btns">
@@ -101,9 +126,13 @@
         <span id="speedTxt">1.0×</span>
       </div>
     </div>
+    <div id="toggles">
+      <button id="bLoop" class="tg-on">沃克环流</button>
+      <button id="bTrade" class="tg-on">信风</button>
+    </div>
     <div class="panel">
       <div class="legend"></div>
-      <div class="src">海洋数据：NOAA NCEP GODAS 月平均位温（pottmp），距平基准 1991–2020 气候态。海表距平为 1°×1° 格点；纵剖面沿赤道，深度 0–500 m、垂直间隔 100 m（由 GODAS 层位插值）。相位切换时的场过渡为演示效果，非真实演变。</div>
+      <div class="src">海洋数据：NOAA NCEP GODAS 月平均位温（pottmp），距平基准 1991–2020 气候态。图上方年、月下拉覆盖 GODAS 数据范围，选定后按 Niño3.4 指数（±0.5°C 阈值）自动判断相位并跳转；未预载网格数据的月份显示该相位代表月份场。海表距平为 1°×1° 格点；纵剖面沿赤道，深度 0–350 m。相位切换时的场过渡为演示效果，非真实演变。</div>
     </div>
   </div>
 </div>
@@ -173,8 +202,17 @@ function initGodas(){
   }
   sstaCur=new Float32Array(NLON*NLATB);
   profCur=new Float32Array(NLON*NDEP);
-  sstaCur.set(GODAS.phases[0].ssta);
-  profCur.set(GODAS.phases[0].prof);
+  /* 各相位默认月份（代表年） */
+  var DEF = { neutral:'2013-08', elnino:'2015-11', lanina:'2020-12' };
+  for(var p3=0;p3<PHASES.length;p3++){
+    var ph3=PHASES[p3]; ph3.mIdx=0;
+    for(var g3=0;g3<GODAS.phases.length;g3++){
+      if(GODAS.phases[g3].key===ph3.key && GODAS.phases[g3].month===DEF[ph3.key]) ph3.mIdx=g3;
+    }
+  }
+  sstaCur.set(GODAS.phases[PHASES[0].mIdx].ssta);
+  profCur.set(GODAS.phases[PHASES[0].mIdx].prof);
+  buildYmSelects();
   SSTA_LUT=makeLUT([[-3.5,'#08306b'],[-2,'#1c5a9e'],[-1.2,'#4a94c6'],[-0.6,'#9ecae1'],[-0.25,'#cfe6f2'],[-0.08,'#eef4f8'],[0.08,'#f7f3ec'],[0.25,'#fbe3cf'],[0.6,'#f5b78e'],[1.2,'#ee8a5f'],[2,'#d95f3b'],[3,'#b13022'],[3.5,'#8c1a12']],96);
   TEMP_LUT=makeLUT([[4,'#0a2f66'],[10,'#155a96'],[15,'#2a86b8'],[19,'#6cc0dd'],[21.5,'#b3e2ee'],[24,'#f2ecc9'],[26,'#f7cf8f'],[28,'#f19d5d'],[30.5,'#e05a38']],96);
   offMap=document.createElement('canvas'); offMap.width=W; offMap.height=H; octx=offMap.getContext('2d');
@@ -193,8 +231,61 @@ function initGodas(){
   }
   dataDirty=true;
 }
-function sstaColor(v){
-  var i=Math.round((clamp(v,-3.5,3.5)+3.5)/7*95), c=SSTA_LUT[i];
+/* 年、月下拉：覆盖 GODAS 数据范围；选定后按 Niño3.4 判断相位并跳转 */
+var selYM = null, selN34 = null;
+function ymList(){
+  if(GODAS.n34ts && GODAS.n34ts.length) return GODAS.n34ts;
+  return GODAS.phases.map(function(g){ return { ym: g.month, v: g.nino34 }; });
+}
+function buildYmSelects(){
+  var list = ymList(), byYear = {};
+  for(var i = 0; i < list.length; i++){
+    var y = list[i].ym.split('-')[0];
+    (byYear[y] = byYear[y] || []).push(list[i]);
+  }
+  var selY = document.getElementById('selYear'), selM = document.getElementById('selMonth');
+  selY.innerHTML = '';
+  var years = Object.keys(byYear);
+  for(var yi = 0; yi < years.length; yi++){
+    var o = document.createElement('option'); o.value = years[yi]; o.textContent = years[yi] + '年';
+    selY.appendChild(o);
+  }
+  function fillMonths(y){
+    selM.innerHTML = '';
+    var ms = byYear[y] || [];
+    for(var mi = 0; mi < ms.length; mi++){
+      var o2 = document.createElement('option');
+      o2.value = ms[mi].ym.split('-')[1];
+      o2.textContent = parseInt(ms[mi].ym.split('-')[1], 10) + '月';
+      selM.appendChild(o2);
+    }
+  }
+  function apply(){
+    var ym = selY.value + '-' + selM.value;
+    var v = null;
+    for(var li = 0; li < list.length; li++){ if(list[li].ym === ym){ v = list[li].v; break; } }
+    selYM = ym; selN34 = v;
+    var key = (v == null) ? 'neutral' : (v >= 0.5 ? 'elnino' : (v <= -0.5 ? 'lanina' : 'neutral'));
+    var idx = 0;
+    for(var pi = 0; pi < PHASES.length; pi++){ if(PHASES[pi].key === key) idx = pi; }
+    /* 优先使用该月真实网格数据，否则用该相位代表月 */
+    var mIdx = PHASES[idx].mIdx;
+    for(var g2 = 0; g2 < GODAS.phases.length; g2++){
+      if(GODAS.phases[g2].key === key && GODAS.phases[g2].month === ym) mIdx = g2;
+    }
+    PHASES[idx].mIdx = mIdx;
+    dataDirty = true;
+    setPhase(idx);   /* 主图与右侧相位卡片跳转 */
+  }
+  selY.onchange = function(){ fillMonths(selY.value); selM.selectedIndex = 0; apply(); };
+  selM.onchange = apply;
+  /* 默认选中当前相位的代表月 */
+  var defYm = GODAS.phases[PHASES[phaseIdx].mIdx != null ? PHASES[phaseIdx].mIdx : 0].month;
+  selY.value = defYm.split('-')[0];
+  fillMonths(selY.value);
+  selM.value = defYm.split('-')[1];
+}
+function sstaColor(v){  var i=Math.round((clamp(v,-3.5,3.5)+3.5)/7*95), c=SSTA_LUT[i];
   return 'rgb('+c[0]+','+c[1]+','+c[2]+')';
 }
 function tempColor(v){
@@ -513,6 +604,7 @@ function render(){
 
   /* --- 信风箭头（白色略向左弯的弧线箭头，长短粗细表示强弱；头部停在环流色带下方，不相交） --- */
   var tw = cur.tw;
+  if(showTrade){
   var twn = clamp((tw - 0.28) / 1.42, 0, 1);      /* 0 弱 → 1 强 */
   var arrW = 3.2 + 5.8 * twn;                     /* 粗细 ∝ 强度 */
   var arrL = (64 + 66 * twn) * 0.8;               /* 长短 ∝ 强度（缩为 0.8 倍） */
@@ -535,10 +627,12 @@ function render(){
     drawArrowHead(wx1, wy1, tdx, tdy, arrW * 2.6, '#ffffff', 0.95);
     ctx.restore();
   }
+  }
   ctx.fillStyle = '#b4551a'; ctx.font = '700 15px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('信风（表层风）', bx(0.55), yEq + 88);
 
   /* --- 沃克环流（完整闭合墨线环：上升边并入环内，首尾相连） --- */
+  if(showLoop){
   var riseX = bx(cur.convU), sinkX = bx(cur.sinkW);
   var loopW = roundedLoop([[riseX, surfY],[riseX, topY],[sinkX, topY],[sinkX, surfY]], 56, 12);
   drawLoop(loopW, 0.06 * (0.45 + 0.55 * clamp(tw, 0.3, 1.7)) * 1.6, 0.85);
@@ -557,6 +651,7 @@ function render(){
 
   /* 云朵最后绘制（置于环流之上） */
   drawClouds();
+  }
 
   /* --- 真实数据标注：距平极值中心 + Niño3.4 框 + 色标 --- */
   if(GODAS){
@@ -624,14 +719,15 @@ function render(){
   ctx.strokeText(ph.zh, 1000, 186);
   ctx.fillStyle = '#4a5560'; ctx.fillText(ph.zh, 1000, 186);
   if(GODAS){
-    var gd = null;
-    for(var gp = 0; gp < GODAS.phases.length; gp++){
-      if(GODAS.phases[gp].key === ph.key) gd = GODAS.phases[gp];
-    }
-    if(gd){
+    var gd = GODAS.phases[ph.mIdx != null ? ph.mIdx : 0];
+    var shownYm = selYM || gd.month;
+    var shownN = (selYM && selN34 != null) ? selN34 : gd.nino34;
+    if(shownN != null){
       ctx.font = '600 12px "Microsoft YaHei", sans-serif';
       ctx.fillStyle = '#8a97a3';
-      ctx.fillText(gd.month + ' 实况 · Niño3.4 ' + (gd.nino34 > 0 ? '+' : '') + gd.nino34.toFixed(2) + '°C', 968, 228);
+      var sub = shownYm + ' 实况 · Niño3.4 ' + (shownN > 0 ? '+' : '') + (+shownN).toFixed(2) + '°C';
+      if(shownYm !== gd.month) sub += '（显示' + ph.zh + '代表月 ' + gd.month + ' 场）';
+      ctx.fillText(sub, 968, 228);
     }
   }
 
@@ -1040,6 +1136,16 @@ function drawSection(){
 }
 
 /* ---------- UI ---------- */
+var showLoop = true, showTrade = true;
+function wireToggle(btnId, get, set){
+  var b = document.getElementById(btnId);
+  b.onclick = function(){
+    set(!get());
+    b.className = get() ? 'tg-on' : 'tg-off';
+  };
+}
+wireToggle('bLoop',  function(){ return showLoop;  }, function(v){ showLoop = v;  });
+wireToggle('bTrade', function(){ return showTrade; }, function(v){ showTrade = v; });
 var cardsBox = document.getElementById('cards');
 var chipsBox = document.getElementById('chips');
 function buildCards(){
@@ -1110,12 +1216,9 @@ function frame(ts){
     time += dt * speed;
     var f = 1 - Math.exp(-dt * speed * 2.2);
     for(var k in cur){ cur[k] += (target[k] - cur[k]) * f; }
-    /* 真实海洋数据场随相位平滑过渡 */
+    /* 真实海洋数据场随相位平滑过渡（使用当前相位选定的年份条目） */
     if(GODAS){
-      var gdT = null;
-      for(var gp2 = 0; gp2 < GODAS.phases.length; gp2++){
-        if(GODAS.phases[gp2].key === PHASES[phaseIdx].key) gdT = GODAS.phases[gp2];
-      }
+      var gdT = GODAS.phases[PHASES[phaseIdx].mIdx != null ? PHASES[phaseIdx].mIdx : 0];
       for(var q4 = 0; q4 < sstaCur.length; q4++){
         var a4 = sstaCur[q4], bb4 = gdT.ssta[q4];
         var nv4 = (isNaN(a4) || isNaN(bb4)) ? bb4 : a4 + (bb4 - a4) * f;
@@ -1129,8 +1232,6 @@ function frame(ts){
         profCur[q6] = nv6;
       }
     }
-    autoT += dt;
-    if(autoT > 9 / speed){ setPhase(phaseIdx + 1); }
   }
   maybeRebuildData(ts);
   render();
@@ -1142,5 +1243,6 @@ buildChips();
 if(GODAS) initGodas();
 requestAnimationFrame(frame);
 </script>
-</body>
-</html>
+
+
+</body></html>
