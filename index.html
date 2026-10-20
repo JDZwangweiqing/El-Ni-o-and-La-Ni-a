@@ -392,7 +392,7 @@ function rebuildSSTA(){
 function rebuildSection(){
   var dtx=secImg.data, maxJ=NDEP-1;
   for(var r=0;r<SECH;r++){
-    var dep=r/(SECH-1)*DMAX;
+    var dep=fracDepth(r/(SECH-1));   /* 非线性深度轴（上 200 m 放大） */
     var fj=Math.min(maxJ-1, Math.floor(dep/100));
     var fw=dep/100-fj;
     for(var i=0;i<NLON;i++){
@@ -558,6 +558,16 @@ function drawStraightArrow(x1, y1, x2, y2, color, w, alpha){
 
 /* ---------- 剖面区（宽度与主图底边等宽；深度仅取 0–350 m） ---------- */
 var DMAX = 350, SECH = 501;
+/* 非线性深度轴：0–200 m 占剖面高度 72%（放大上层变化），200–350 m 压缩到 28% */
+var DSCALE_B = 200, DSCALE_FRAC = 0.72;
+function depthFrac(d){
+  if(d <= DSCALE_B) return d / DSCALE_B * DSCALE_FRAC;
+  return DSCALE_FRAC + (d - DSCALE_B) / (DMAX - DSCALE_B) * (1 - DSCALE_FRAC);
+}
+function fracDepth(f){  /* depthFrac 的逆函数（纹理行 → 深度） */
+  if(f <= DSCALE_FRAC) return f / DSCALE_FRAC * DSCALE_B;
+  return DSCALE_B + (f - DSCALE_FRAC) / (1 - DSCALE_FRAC) * (DMAX - DSCALE_B);
+}
 var sx0 = 124, sx1 = 956, sy0 = 512, sy1 = 698;
 function secX(u){ return sx0 + u * (sx1 - sx0); }
 var SECTICKS = [[0.125,'140°E'],[0.375,'180°'],[0.625,'140°W'],[0.875,'100°W']];
@@ -730,6 +740,9 @@ function render(){
     for(var q5 = 0; q5 < sstaCur.length; q5++){
       var v5 = sstaCur[q5];
       if(isNaN(v5)) continue;
+      /* 仅在热带太平洋（15°S–15°N，ENSO 信号区）内找极值，让标注落在对应海域 */
+      var lat5 = GODAS.latCenters[Math.floor(q5 / NLON)];
+      if(lat5 < -15 || lat5 > 15) continue;
       if(v5 > maxV){ maxV = v5; maxI = q5; }
       if(v5 < minV){ minV = v5; minI = q5; }
     }
@@ -1078,7 +1091,7 @@ function drawSection(){
   ctx.save();
   ctx.strokeStyle = 'rgba(30,60,90,0.28)'; ctx.lineWidth = 1;
   for(var d = 100; d < DMAX; d += 100){
-    var gy = sy0 + d / DMAX * h;
+    var gy = sy0 + depthFrac(d) * h;
     ctx.beginPath(); ctx.moveTo(sx0, gy); ctx.lineTo(sx1, gy); ctx.stroke();
   }
   ctx.restore();
@@ -1092,7 +1105,7 @@ function drawSection(){
     for(var i2 = 0; i2 < NLON; i2++){
       var dd = isoDepth(i2, 20);
       if(isNaN(dd)){ started = false; continue; }
-      var x2 = sx0 + i2 / (NLON - 1) * w, y2 = sy0 + Math.min(dd, DMAX) / DMAX * h;
+      var x2 = sx0 + i2 / (NLON - 1) * w, y2 = sy0 + depthFrac(Math.min(dd, DMAX)) * h;
       if(!started){ ctx.moveTo(x2, y2); started = true; } else ctx.lineTo(x2, y2);
     }
     ctx.stroke();
@@ -1103,7 +1116,7 @@ function drawSection(){
       ctx.font = 'italic 700 12px Georgia, serif'; ctx.textAlign = 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,60,90,0.6)';
       var thT = '20°C 温跃层';
-      var thX = secX(0.28), thY = sy0 + Math.min(isoW, DMAX) / DMAX * h + 16;
+      var thX = secX(0.28), thY = sy0 + depthFrac(Math.min(isoW, DMAX)) * h + 16;
       ctx.strokeText(thT, thX, thY); ctx.fillStyle = '#ffffff'; ctx.fillText(thT, thX, thY);
     }
   }
@@ -1131,10 +1144,10 @@ function drawSection(){
   }
   /* 深度轴（左侧） */
   ctx.fillStyle = '#5d6d7e'; ctx.font = '10.5px "Segoe UI", sans-serif'; ctx.textAlign = 'right';
-  var dticks = [0, 100, 200, 300, DMAX];
+  var dticks = [0, 100, 200, 300];
   for(var di = 0; di < dticks.length; di++){
     var d2 = dticks[di];
-    ctx.fillText(d2 + '' + (d2 === DMAX ? ' m' : ''), sx0 - 6, sy0 + d2 / DMAX * h + 3.5);
+    ctx.fillText(d2 + '', sx0 - 6, sy0 + depthFrac(d2) * h + 3.5);
   }
   ctx.save();
   ctx.translate(sx0 - 34, sy0 + h / 2); ctx.rotate(-Math.PI / 2);
@@ -1155,7 +1168,7 @@ function drawSection(){
   var upBase = sy0 + 0.70 * h + 36 * upK;         /* 起点更深 → 箭身更长 */
   if(GODAS){
     var isoE = isoDepth(Math.min(NLON - 1, Math.round(0.945 * (NLON - 1))), 20);
-    if(!isNaN(isoE)) upBase = sy0 + Math.min(isoE, DMAX) / DMAX * h + 26 + 30 * upK;
+    if(!isNaN(isoE)) upBase = sy0 + depthFrac(Math.min(isoE, DMAX)) * h + 26 + 30 * upK;
   }
   /* 箭头：严格竖直向上的实心箭头（箭身竖直，头部端正向上） */
   var tipY = sy0 + 16;
