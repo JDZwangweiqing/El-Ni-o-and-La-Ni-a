@@ -709,7 +709,7 @@ function render(){
   drawLoop(loopW, 0.06 * (0.45 + 0.55 * clamp(tw, 0.3, 1.7)) * 1.6, 0.85);
   if(cur.loopE > 0.05){
     var sink2 = bx(0.96);
-    var topY2 = 26;
+    var topY2 = topY;   /* 厄尔尼诺东侧环流顶边与西侧同高 */
     var loopE = roundedLoop([[rise2, surfY],[rise2, topY2],[sink2, topY2],[sink2, surfY]], 56, 12);
     drawLoop(loopE, 0.06 * 1.1, cur.loopE);
   }
@@ -1292,8 +1292,13 @@ bPlay.onclick = function(){
   playing = !playing;
   bPlay.textContent = playing ? '⏸ 暂停' : '▶ 播放';
 };
-document.getElementById('bPrev').onclick = function(){ setPhase(phaseIdx - 1); };
-document.getElementById('bNext').onclick = function(){ setPhase(phaseIdx + 1); };
+/* 上一步/下一步：切到相邻相位，并随机选该相位的一个月份同步到左上角年月下拉 */
+function stepPhase(d){
+  var ni = ((phaseIdx + d) % PHASES.length + PHASES.length) % PHASES.length;
+  gotoRandomYm(PHASES[ni].key);   /* 设置下拉框并经 apply() 完成相位跳转 */
+}
+document.getElementById('bPrev').onclick = function(){ stepPhase(-1); };
+document.getElementById('bNext').onclick = function(){ stepPhase(1); };
 document.getElementById('speed').oninput = function(){
   speed = parseFloat(this.value);
   document.getElementById('speedTxt').textContent = speed.toFixed(1) + '×';
